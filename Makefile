@@ -1,3 +1,4 @@
+CC = gcc
 CFLAGS=-g -Wall -I/usr/include/libxml2 -DLINUX -D_GNU_SOURCE=1
 LDFLAGS=-lcrypto -lcurl -lssl -lxml2 -lbsd
 

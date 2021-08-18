@@ -34,7 +34,7 @@ s3_hmac_sign(const char *key, const char *str, size_t len) {
 	unsigned char *digest; 
 	char *buf;
 	unsigned int digest_len = EVP_MAX_MD_SIZE; /* HMAC_Final needs at most EVP_MAX_MD_SIZE bytes */
-	HMAC_CTX ctx;
+	HMAC_CTX *ctx;
 	BIO *bmem, *b64;
 	BUF_MEM *bufptr;
 	
@@ -42,8 +42,9 @@ s3_hmac_sign(const char *key, const char *str, size_t len) {
 	ENGINE_register_all_complete();
 
 	/* Setup HMAC context, init with sha1 and our key*/ 
-	HMAC_CTX_init(&ctx);
-	HMAC_Init_ex(&ctx, key, strlen((char *)key), EVP_sha1(), NULL);
+	ctx = HMAC_CTX_new();
+	//HMAC_CTX_init(ctx);
+	HMAC_Init_ex(ctx, key, strlen((char *)key), EVP_sha1(), NULL);
 
 	/* Create Base64 BIO filter that outputs to memory */
 	b64  = BIO_new(BIO_f_base64());
@@ -54,10 +55,10 @@ s3_hmac_sign(const char *key, const char *str, size_t len) {
 	digest = malloc(digest_len);
 
 	/* Push data into HMAC */
-	HMAC_Update(&ctx, (unsigned char *)str, (unsigned int)len);
+	HMAC_Update(ctx, (unsigned char *)str, (unsigned int)len);
 
 	/* Flush HMAC data into buffer */
-	HMAC_Final(&ctx, digest, &digest_len);
+	HMAC_Final(ctx, digest, &digest_len);
 
 	/* Write data into BIO, flush and fetch the data */
 	BIO_write(b64, digest, digest_len);
@@ -69,7 +70,8 @@ s3_hmac_sign(const char *key, const char *str, size_t len) {
 	buf[bufptr->length - 1] = '\0';
 
 	BIO_free_all(b64);
-	HMAC_CTX_cleanup(&ctx);
+	HMAC_CTX_free(ctx);
+	//HMAC_CTX_cleanup(&ctx);
 
 	ENGINE_cleanup();
 	free(digest);
